@@ -20,25 +20,25 @@
 (define-constant VISIBILITY_PUBLIC u1)
 
 ;; User Profile Map
-(define-map user-profiles 
-  principal 
+(define-map profiles 
+  {owner: principal}
   {
-    professional-name: (string-ascii MAX_NAME_LENGTH),
-    job-title: (string-ascii MAX_TITLE_LENGTH),
-    industry: (string-ascii MAX_INDUSTRY_LENGTH),
-    skills: (list MAX_SKILLS_COUNT (string-ascii MAX_SKILL_LENGTH)),
-    career-goals: (string-ascii MAX_GOALS_LENGTH),
+    name: (string-utf8 50),
+    title: (string-utf8 100),
+    industry: (string-utf8 50),
+    skills: (list 10 (string-utf8 30)),
+    goals: (string-utf8 250),
     visibility: uint
   }
 )
 
 ;; Private Function: Validate Profile Input
 (define-private (validate-profile-input 
-  (name (string-ascii MAX_NAME_LENGTH))
-  (title (string-ascii MAX_TITLE_LENGTH))
-  (industry (string-ascii MAX_INDUSTRY_LENGTH))
-  (skills (list MAX_SKILLS_COUNT (string-ascii MAX_SKILL_LENGTH)))
-  (goals (string-ascii MAX_GOALS_LENGTH))
+  (name (string-utf8 50))
+  (title (string-utf8 100))
+  (industry (string-utf8 50))
+  (skills (list 10 (string-utf8 30)))
+  (goals (string-utf8 250))
   (visibility uint)
 )
   (begin
@@ -53,11 +53,11 @@
 
 ;; Create User Profile
 (define-public (create-profile
-  (name (string-ascii MAX_NAME_LENGTH))
-  (title (string-ascii MAX_TITLE_LENGTH))
-  (industry (string-ascii MAX_INDUSTRY_LENGTH))
-  (skills (list MAX_SKILLS_COUNT (string-ascii MAX_SKILL_LENGTH)))
-  (goals (string-ascii MAX_GOALS_LENGTH))
+  (name (string-utf8 50))
+  (title (string-utf8 100))
+  (industry (string-utf8 50))
+  (skills (list 10 (string-utf8 30)))
+  (goals (string-utf8 250))
   (visibility uint)
 )
   (begin
@@ -65,15 +65,15 @@
     (try! (validate-profile-input name title industry skills goals visibility))
     
     ;; Check if profile already exists
-    (asserts! (is-none (map-get? user-profiles tx-sender)) (err ERR_PROFILE_ALREADY_EXISTS))
+    (asserts! (is-none (map-get? profiles {owner: tx-sender})) (err ERR_PROFILE_ALREADY_EXISTS))
     
     ;; Create profile
-    (map-set user-profiles tx-sender {
-      professional-name: name,
-      job-title: title,
+    (map-set profiles {owner: tx-sender} {
+      name: name,
+      title: title,
       industry: industry,
       skills: skills,
-      career-goals: goals,
+      goals: goals,
       visibility: visibility
     })
     
@@ -83,11 +83,11 @@
 
 ;; Update User Profile
 (define-public (update-profile
-  (name (string-ascii MAX_NAME_LENGTH))
-  (title (string-ascii MAX_TITLE_LENGTH))
-  (industry (string-ascii MAX_INDUSTRY_LENGTH))
-  (skills (list MAX_SKILLS_COUNT (string-ascii MAX_SKILL_LENGTH)))
-  (goals (string-ascii MAX_GOALS_LENGTH))
+  (name (string-utf8 50))
+  (title (string-utf8 100))
+  (industry (string-utf8 50))
+  (skills (list 10 (string-utf8 30)))
+  (goals (string-utf8 250))
   (visibility uint)
 )
   (begin
@@ -95,15 +95,15 @@
     (try! (validate-profile-input name title industry skills goals visibility))
     
     ;; Ensure profile exists and is owned by tx-sender
-    (asserts! (is-some (map-get? user-profiles tx-sender)) (err ERR_PROFILE_NOT_FOUND))
+    (asserts! (is-some (map-get? profiles {owner: tx-sender})) (err ERR_PROFILE_NOT_FOUND))
     
     ;; Update profile
-    (map-set user-profiles tx-sender {
-      professional-name: name,
-      job-title: title,
+    (map-set profiles {owner: tx-sender} {
+      name: name,
+      title: title,
       industry: industry,
       skills: skills,
-      career-goals: goals,
+      goals: goals,
       visibility: visibility
     })
     
@@ -113,7 +113,7 @@
 
 ;; Get Public Profile (respects visibility)
 (define-read-only (get-profile (user principal))
-  (let ((profile (map-get? user-profiles user)))
+  (let ((profile (map-get? profiles {owner: user})))
     (match profile
       p (if (or 
               (is-eq tx-sender user) 
@@ -131,10 +131,10 @@
 (define-public (delete-profile)
   (begin
     ;; Ensure profile exists and is owned by tx-sender
-    (asserts! (is-some (map-get? user-profiles tx-sender)) (err ERR_PROFILE_NOT_FOUND))
+    (asserts! (is-some (map-get? profiles {owner: tx-sender})) (err ERR_PROFILE_NOT_FOUND))
     
     ;; Delete profile
-    (map-delete user-profiles tx-sender)
+    (map-delete profiles {owner: tx-sender})
     
     (ok true)
   )
